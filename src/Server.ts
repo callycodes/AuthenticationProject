@@ -8,6 +8,7 @@ import methodOverride from "method-override";
 import cors from "cors";
 import "@tsed/ajv";
 import {config, rootDir} from "./config";
+import * as dynamoose from "dynamoose";
 
 @Configuration({
   ...config,
@@ -15,7 +16,7 @@ import {config, rootDir} from "./config";
   httpPort: process.env.PORT || 8083,
   httpsPort: false, // CHANGE
   mount: {
-    "/rest": [
+    "/v1/": [
       `${rootDir}/controllers/**/*.ts`
     ]
   },
@@ -29,8 +30,14 @@ export class Server {
 
   @Configuration()
   settings: Configuration;
-
+  
   $beforeRoutesInit(): void {
+    dynamoose.aws.sdk.config.update({
+      "accessKeyId": process.env.AWS_ACCESS_KEY_ID,
+      "secretAccessKey": process.env.AWS_SECRET_ACCESS_KEY,
+      "region": process.env.AWS_REGION
+    });
+
     this.app
       .use(cors())
       .use(cookieParser())
