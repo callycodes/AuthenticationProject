@@ -9,6 +9,7 @@ import cors from "cors";
 import "@tsed/ajv";
 import {config, rootDir} from "./config";
 import * as dynamoose from "dynamoose";
+import SQSClient from 'src/config/sqs';
 
 @Configuration({
   ...config,
@@ -32,12 +33,16 @@ export class Server {
   settings: Configuration;
   
   $beforeRoutesInit(): void {
+
     dynamoose.aws.sdk.config.update({
       "accessKeyId": process.env.AWS_ACCESS_KEY_ID,
       "secretAccessKey": process.env.AWS_SECRET_ACCESS_KEY,
       "region": process.env.AWS_REGION
     });
 
+    const sqs = new SQSClient();
+    sqs.start();
+    
     this.app
       .use(cors())
       .use(cookieParser())

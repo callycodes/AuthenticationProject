@@ -3,7 +3,7 @@ import * as aws from "aws-sdk";
 class SQSClient {
 
   client: aws.SQS
-  queue_url: string
+  private queue_url: string
 
   constructor() {
     console.log("initiated sqs client")
@@ -11,24 +11,24 @@ class SQSClient {
     this.queue_url = process.env.AUTHENTICATION_SQS_QUEUE_URL || ""
   }
 
-  send() {
+  send(handler: string, method: string, body: string, retries:number = 5) {
     const params = {
       DelaySeconds: 10,
       MessageAttributes: {
-        "Title": {
-          DataType: "String",
-          StringValue: "The Whistler"
-        },
-        "Author": {
-          DataType: "String",
-          StringValue: "John Grisham"
-        },
-        "WeeksOn": {
+        "Retries": {
           DataType: "Number",
-          StringValue: "6"
+          StringValue: retries.toString()
+        },
+        "Handler": {
+          DataType: "String",
+          StringValue: handler
+        },
+        "Method": {
+          DataType: "String",
+          StringValue: method
         }
       },
-      MessageBody: "Information about current NY Times fiction bestseller for week of 12/11/2016.",
+      MessageBody: body,
       QueueUrl: this.queue_url
     }
 
@@ -56,7 +56,8 @@ class SQSClient {
     });
   }
 
-  retrieve() {
+  start() {
+    console.log("POLLING", "Looking for messages")
     var params = {
       AttributeNames: [
          "SentTimestamp"
@@ -67,19 +68,22 @@ class SQSClient {
       ],
       QueueUrl: this.queue_url,
       VisibilityTimeout: 20,
-      WaitTimeSeconds: 0
+      WaitTimeSeconds: 10
     };
      
-    this.client.receiveMessage(params, function(err, data) {
+    this.client.receiveMessage(params, (err, data) => {
       if (err) {
         console.log("Receive Error", err);
       } else if (data.Messages) {
-        this.delete(data.Messages[0].ReceiptHandle)
+        console.log("Message", data.Messages[0].Body)
+        this.delete(data.Messages[0].ReceiptHandle as string)
       }
+      this.start();
     });
+
      
   }
 
 }
 
-export default new SQSClient();
+export default SQSClient
