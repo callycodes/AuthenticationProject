@@ -13,7 +13,6 @@ export class UserController {
 
   @Get("/:id")
   async getUser(@PathParams("id") id: string): Promise<User> {
-    //TODO
     const user = await UserModel.get(id);
     return user || false;
   }
